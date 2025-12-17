@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BookCategoryModule } from './book-category/book-category.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       entities: [], // เราจะเพิ่ม Entities ที่นี่ในภายหลัง
       synchronize: true, // สร้าง Table อัตโนมัติ (ใช้สำหรับ Dev เท่านั้น)
     }),
+    BookCategoryModule,
   ],
 })
 export class AppModule {}
