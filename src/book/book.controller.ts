@@ -2,44 +2,46 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { BookService } from './book.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
-// 👇 1. Import ของที่ต้องใช้สำหรับการป้องกัน
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+// 👇 Import Decorator ที่เราสร้างไว้
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('book')
 export class BookController {
   constructor(private readonly bookService: BookService) {}
 
-  // 🔒 POST: สร้างหนังสือ (ต้อง Login + ต้องเป็น ADMIN)
+  // 🔒 POST: สร้างหนังสือ (ADMIN Only)
   @Post()
-  @UseGuards(AuthGuard('jwt'), RolesGuard) // ตรวจ Token ก่อน แล้วค่อยตรวจ Role
-  @Roles(UserRole.ADMIN) // แปะป้ายว่าห้องนี้เฉพาะ ADMIN
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   create(@Body() createBookDto: CreateBookDto) {
     return this.bookService.create(createBookDto);
   }
 
-  // 🔓 GET: ดูหนังสือทั้งหมด (เปิด Public)
+  // 🔓 GET: ดูทั้งหมด
   @Get()
   findAll() {
     return this.bookService.findAll();
   }
 
-  // 🔓 GET: ดูเล่มเดียว (เปิด Public)
+  // 🔓 GET: ดูเล่มเดียว
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.bookService.findOne(id);
   }
 
-  // 🔒 PATCH Like: กดไลค์ (ต้อง Login แต่เป็น Role อะไรก็ได้)
+  // 🔒 PATCH: Toggle Like (เปลี่ยนจาก incrementLikes เป็น toggleLike)
   @Patch(':id/like')
-  @UseGuards(AuthGuard('jwt')) // แค่มี Token ก็กดไลค์ได้
-  likeBook(@Param('id') id: string) {
-    return this.bookService.incrementLikes(id);
+  @UseGuards(AuthGuard('jwt')) // ต้อง Login ถึงจะกดได้
+  async toggleLike(@Param('id') id: string, @CurrentUser() user: any) {
+    // ส่งทั้ง id หนังสือ และ id คนกด ไปให้ Service
+    return this.bookService.toggleLike(id, user.userId);
   }
 
-  // 🔒 PATCH Update: แก้ไขข้อมูล (ต้อง Login + ต้องเป็น ADMIN)
+  // 🔒 PATCH: แก้ไข (ADMIN Only)
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -47,7 +49,7 @@ export class BookController {
     return this.bookService.update(id, updateBookDto);
   }
 
-  // 🔒 DELETE: ลบหนังสือ (ต้อง Login + ต้องเป็น ADMIN)
+  // 🔒 DELETE: ลบ (ADMIN Only)
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
